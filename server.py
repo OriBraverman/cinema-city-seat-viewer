@@ -108,7 +108,7 @@ def get_batch_date_seats():
             showtimes = out_json.get('showtimes', [])
             
             for s in showtimes:
-                if s.get('eventId') and s.get('seatplan'):
+                if s.get('eventId') and (s.get('seatplan') or s.get('seatsStatus')):
                     SHOW_SEATS_CACHE[str(s['eventId'])] = s
 
             return jsonify(out_json)

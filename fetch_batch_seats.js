@@ -1,7 +1,8 @@
 /**
  * Cinema City Realtime Batch Seat Fetcher
  * Establishes a single browser session to bypass Cloudflare/session validation,
- * then extracts full seat maps & availability in parallel for all daily showtimes.
+ * captures session UUID header, then fetches full seat maps & availability in parallel
+ * for all daily showtimes, pre-calculating free/occupied counts.
  */
 
 const puppeteer = require('puppeteer-core');
@@ -77,18 +78,30 @@ function httpGetJson(url) {
 
     const page = await browser.newPage();
     const firstEventId = showtimes[0].EventId;
-    
-    // Establish session context on Cinema City tickets domain
-    await page.goto(`https://tickets.cinema-city.co.il/order/${firstEventId}`, { waitUntil: 'networkidle2', timeout: 20000 });
-    await new Promise(r => setTimeout(r, 400));
+
+    let capturedUuid = '';
+    page.on('request', req => {
+      const u = req.headers()['uuid'];
+      if (u) capturedUuid = u;
+    });
+
+    // Establish initial session context on Cinema City tickets domain
+    await page.goto(`https://tickets.cinema-city.co.il/order/${firstEventId}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await new Promise(r => setTimeout(r, 600));
 
     // Execute parallel in-page extraction for all daily showtimes
-    const results = await page.evaluate(async (eventsList) => {
+    const results = await page.evaluate(async (eventsList, sessionUuid) => {
       const fetchOne = async (ev) => {
         try {
-          const presRes = await fetch(`https://tickets.cinema-city.co.il/api/presentations/${ev.EventId}`);
+          const reqHeaders = {
+            'accept': 'application/json, text/plain, */*',
+            'content-type': 'application/json'
+          };
+          if (sessionUuid) reqHeaders['uuid'] = sessionUuid;
+
+          const presRes = await fetch(`https://tickets.cinema-city.co.il/api/presentations/${ev.EventId}`, { headers: reqHeaders });
           const presJson = await presRes.json();
-          const pres = presJson.presentation;
+          const pres = presJson ? presJson.presentation : null;
 
           let hourStr = ev.Hour || '';
           if (!hourStr && ev.Date) {
@@ -119,8 +132,8 @@ function httpGetJson(url) {
           }
 
           const [spRes, statusRes] = await Promise.all([
-            fetch(`https://tickets.cinema-city.co.il/api/seats/seatplanV2?venueId=${pres.venueId}&seatplanId=${pres.seatplanId}`),
-            fetch(`https://tickets.cinema-city.co.il/api/seats/seats-statusV2?presentationId=${ev.EventId}&venueTypeId=${pres.venueTypeId}&isReserved=${pres.isReserved ? 1 : 0}`)
+            fetch(`https://tickets.cinema-city.co.il/api/seats/seatplanV2?venueId=${pres.venueId}&seatplanId=${pres.seatplanId}`, { headers: reqHeaders }),
+            fetch(`https://tickets.cinema-city.co.il/api/seats/seats-statusV2?presentationId=${ev.EventId}&venueTypeId=${pres.venueTypeId}&isReserved=${pres.isReserved ? 1 : 0}`, { headers: reqHeaders })
           ]);
 
           let spJson = null;
@@ -130,6 +143,15 @@ function httpGetJson(url) {
 
           const seats = statusJson && statusJson.seats ? statusJson.seats : {};
 
+          let tot = 0;
+          let free = 0;
+          let occ = 0;
+          for (const k in seats) {
+            tot++;
+            if (seats[k] === 0) free++;
+            else occ++;
+          }
+
           return {
             eventId: String(ev.EventId),
             hour: hourStr,
@@ -138,11 +160,11 @@ function httpGetJson(url) {
             featureImageUrl: pres.featureImageUrl || '',
             venueName: pres.venueName || 'אולם',
             locationName: pres.locationName || 'סינמה סיטי',
-            totalSeats: 0,
-            freeSeats: 0,
-            occupiedSeats: 0,
+            totalSeats: tot,
+            freeSeats: free,
+            occupiedSeats: occ,
             seatsStatus: seats,
-            seatplan: spJson ? spJson.S : null
+            seatplan: spJson ? (spJson.S || spJson) : null
           };
         } catch(e) {
           return {
@@ -163,7 +185,7 @@ function httpGetJson(url) {
       };
 
       return await Promise.all(eventsList.map(fetchOne));
-    }, showtimes);
+    }, showtimes, capturedUuid);
 
     console.log(JSON.stringify({ error: null, showtimes: results }));
 
