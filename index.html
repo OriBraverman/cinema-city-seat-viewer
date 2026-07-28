@@ -1525,12 +1525,12 @@
                         const isWheelchair = seatData.hc === 1;
 
                         const statusKey = `1_${sKey}_${rKey}`;
-                        const statusVal = seatsStatus ? seatsStatus[statusKey] : 0;
-                        const isTakenByStatus = statusVal !== 0;
+                        const statusVal = seatsStatus ? seatsStatus[statusKey] : undefined;
+                        const isTakenByStatus = (statusVal === undefined || statusVal !== 0);
 
                         totalCount++;
 
-                        if (isTakenByStatus || isWheelchair) {
+                        if (isTakenByStatus) {
                             occupiedCount++;
                         } else {
                             freeCount++;
@@ -1604,8 +1604,8 @@
                     const isWheelchair = seatData.hc === 1;
 
                     const statusKey = `1_${sKey}_${rKey}`;
-                    const statusVal = seatsStatus ? seatsStatus[statusKey] : 0;
-                    const isTaken = statusVal !== 0;
+                    const statusVal = seatsStatus ? seatsStatus[statusKey] : undefined;
+                    const isTaken = (statusVal === undefined || statusVal !== 0);
 
                     const seatBtn = document.createElement('div');
                     let seatClass = 'seat-btn ';
@@ -1694,12 +1694,12 @@
                         const isWheelchair = seatData.hc === 1;
 
                         const statusKey = `1_${sKey}_${rKey}`;
-                        const statusVal = seatsStatus ? seatsStatus[statusKey] : 0;
-                        const isTakenByStatus = statusVal !== 0;
+                        const statusVal = seatsStatus ? seatsStatus[statusKey] : undefined;
+                        const isTakenByStatus = (statusVal === undefined || statusVal !== 0);
 
                         total++;
 
-                        if (isTakenByStatus || isWheelchair) {
+                        if (isTakenByStatus) {
                             occ++;
                         } else {
                             free++;

@@ -135,18 +135,20 @@ def get_show_seats():
                 vt_id = pres.get('venueTypeId')
                 is_res = 1 if pres.get('isReserved') else 0
 
-                sp_res = requests.get(f"https://tickets.cinema-city.co.il/api/seats/seatplanV2?venueId={v_id}&seatplanId={sp_id}", headers=HEADERS, verify=False, timeout=10)
+                sp_res = requests.post(f"https://tickets.cinema-city.co.il/api/seats/seatplanV2?venueId={v_id}&seatplanId={sp_id}", headers=HEADERS, verify=False, timeout=10)
                 st_res = requests.get(f"https://tickets.cinema-city.co.il/api/seats/seats-statusV2?presentationId={event_id}&venueTypeId={vt_id}&isReserved={is_res}", headers=HEADERS, verify=False, timeout=10)
 
                 sp_json = sp_res.json() if sp_res.status_code == 200 else {}
                 st_json = st_res.json() if st_res.status_code == 200 else {}
+
+                seatplan_data = sp_json.get('S') if sp_json.get('S') else sp_json
 
                 out = {
                     "eventId": event_id,
                     "featureName": pres.get('featureName', ''),
                     "featureImageUrl": pres.get('featureImageUrl', ''),
                     "venueName": pres.get('venueName', 'אולם'),
-                    "seatplan": sp_json.get('S'),
+                    "seatplan": seatplan_data,
                     "seatsStatus": st_json.get('seats', {})
                 }
                 SHOW_SEATS_CACHE[event_id] = out

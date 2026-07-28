@@ -132,8 +132,8 @@ function httpGetJson(url) {
           }
 
           const [spRes, statusRes] = await Promise.all([
-            fetch(`https://tickets.cinema-city.co.il/api/seats/seatplanV2?venueId=${pres.venueId}&seatplanId=${pres.seatplanId}`, { headers: reqHeaders }),
-            fetch(`https://tickets.cinema-city.co.il/api/seats/seats-statusV2?presentationId=${ev.EventId}&venueTypeId=${pres.venueTypeId}&isReserved=${pres.isReserved ? 1 : 0}`, { headers: reqHeaders })
+            fetch(`https://tickets.cinema-city.co.il/api/seats/seatplanV2?venueId=${pres.venueId}&seatplanId=${pres.seatplanId}`, { method: 'POST', headers: reqHeaders }),
+            fetch(`https://tickets.cinema-city.co.il/api/seats/seats-statusV2?presentationId=${ev.EventId}&venueTypeId=${pres.venueTypeId}&isReserved=${pres.isReserved ? 1 : 0}`, { method: 'GET', headers: reqHeaders })
           ]);
 
           let spJson = null;
@@ -142,14 +142,35 @@ function httpGetJson(url) {
           try { statusJson = await statusRes.json(); } catch(e) {}
 
           const seats = statusJson && statusJson.seats ? statusJson.seats : {};
+          const seatplan = spJson ? (spJson.S || spJson) : null;
 
           let tot = 0;
           let free = 0;
           let occ = 0;
-          for (const k in seats) {
-            tot++;
-            if (seats[k] === 0) free++;
-            else occ++;
+
+          if (seatplan && seatplan['1'] && seatplan['1'].G && seatplan['1'].G['0'] && seatplan['1'].G['0'].R) {
+            const rowsObj = seatplan['1'].G['0'].R;
+            for (const rKey in rowsObj) {
+              const seatsObj = rowsObj[rKey].S || {};
+              for (const sKey in seatsObj) {
+                tot++;
+                const statusKey = `1_${sKey}_${rKey}`;
+                const statusVal = seats[statusKey];
+                const isTaken = (statusVal === undefined || statusVal !== 0);
+
+                if (isTaken) {
+                  occ++;
+                } else {
+                  free++;
+                }
+              }
+            }
+          } else {
+            for (const k in seats) {
+              tot++;
+              if (seats[k] === 0) free++;
+              else occ++;
+            }
           }
 
           return {
@@ -164,7 +185,7 @@ function httpGetJson(url) {
             freeSeats: free,
             occupiedSeats: occ,
             seatsStatus: seats,
-            seatplan: spJson ? (spJson.S || spJson) : null
+            seatplan: seatplan
           };
         } catch(e) {
           return {
