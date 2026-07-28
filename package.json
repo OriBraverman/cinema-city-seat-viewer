@@ -1,0 +1,20 @@
+{
+  "name": "cinema-city-seat-viewer",
+  "version": "1.0.0",
+  "description": "Realtime Cinema City Seat Map & Occupancy Dashboard",
+  "main": "fetch_batch_seats.js",
+  "scripts": {
+    "start": "python server.py"
+  },
+  "keywords": [
+    "cinema-city",
+    "seat-map",
+    "occupancy-dashboard",
+    "realtime"
+  ],
+  "author": "Ori Braverman",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer-core": "^22.0.0"
+  }
+}

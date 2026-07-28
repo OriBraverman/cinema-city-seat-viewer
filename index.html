@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת בדיקת מושבים בזמן אמת - סינמה סיטי</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cc-blue-bg: #0056e0;
+            --cc-blue-dark: #003db3;
+            --cc-yellow: #ffc800;
+            --cc-seat-free: #3b82f6;
+            --cc-seat-taken: #ef4444;
+            --cc-seat-wheelchair: #0284c7;
+            --bg-page: #f8fafc;
+            --text-dark: #0f172a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Rubik', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding-bottom: 60px;
+        }
+
+        /* Top Control Bar */
+        .top-control-bar {
+            background: #0b1329;
+            color: white;
+            padding: 16px 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            position: relative;
+            z-index: 100;
+        }
+
+        .control-flex {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .app-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .controls-group {
+            display: flex;
+            align-items: flex-end;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .input-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .input-item label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        select {
+            background: #1e293b;
+            color: white;
+            border: 1px solid #475569;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+            min-width: 210px;
+            height: 42px;
+        }
+
+        select:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3);
+        }
+
+        .btn-search {
+            background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+            color: #0f172a;
+            border: none;
+            padding: 0 24px;
+            height: 42px;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .btn-search:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(56, 189, 248, 0.5);
+            background: #7dd3fc;
+        }
+
+        /* Initial Welcome Card */
+        .welcome-card {
+            max-width: 900px;
+            margin: 60px auto;
+            background: white;
+            border-radius: 20px;
+            padding: 50px 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
+        }
+
+        .welcome-icon {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+        }
+
+        .welcome-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 10px;
+        }
+
+        .welcome-text {
+            font-size: 1.05rem;
+            color: #64748b;
+            font-weight: 500;
+            line-height: 1.6;
+        }
+
+        /* Sophisticated Progress Card */
+        .progress-card {
+            display: none;
+            max-width: 900px;
+            margin: 40px auto;
+            background: #0f172a;
+            color: white;
+            border-radius: 20px;
+            padding: 30px 35px;
+            box-shadow: 0 12px 35px rgba(15, 23, 42, 0.3);
+            border: 1px solid #334155;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .progress-status-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .progress-percent-badge {
+            background: #0284c7;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 800;
+            padding: 4px 14px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+            direction: ltr;
+        }
+
+        .progress-track-bg {
+            width: 100%;
+            height: 14px;
+            background: #1e293b;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #334155;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #0284c7 0%, #38bdf8 50%, #7dd3fc 100%);
+            border-radius: 8px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-fill-bar::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 1.5s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-subtext {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        /* Results Container (Hidden initially until Search) */
+        .results-container {
+            display: none;
+        }
+
+        /* Official Cinema City Blue Header Banner */
+        .cc-header-bar {
+            background: linear-gradient(180deg, var(--cc-blue-bg) 0%, var(--cc-blue-dark) 100%);
+            color: white;
+            padding: 25px 20px 35px 20px;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 86, 224, 0.3);
+            margin-top: 10px;
+        }
+
+        .header-content {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .movie-info-text {
+            text-align: right;
+        }
+
+        .movie-info-text h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .location-name {
+            font-size: 1.3rem;
+            color: var(--cc-yellow);
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .showtime-date {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .movie-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tag-pill {
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        /* Movie Poster Frame */
+        .movie-poster-box {
+            width: 115px;
+            height: 155px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: #1e293b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .movie-poster-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .poster-placeholder-icon {
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+        }
+
+        .poster-placeholder-text {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #f8fafc;
+            padding: 0 6px;
+            line-height: 1.2;
+        }
+
+        /* Step Indicator Tabs */
+        .steps-container {
+            max-width: 600px;
+            margin: -20px auto 20px auto;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .step-tab {
+            background: white;
+            color: #64748b;
+            padding: 10px 22px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            position: relative;
+        }
+
+        .step-tab.active {
+            background: var(--cc-yellow);
+            color: #0f172a;
+            border-color: #eab308;
+            box-shadow: 0 6px 16px rgba(255, 200, 0, 0.4);
+        }
+
+        .step-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px 6px 0 6px;
+            border-style: solid;
+            border-color: var(--cc-yellow) transparent transparent transparent;
+        }
+
+        .sub-instruction {
+            text-align: center;
+            font-size: 0.95rem;
+            color: #475569;
+            font-weight: 600;
+            margin-bottom: 25px;
+        }
+
+        /* Time Slider Control Card */
+        .slider-control-card {
+            max-width: 1100px;
+            margin: 0 auto 25px auto;
+            background: white;
+            padding: 22px 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .slider-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .slider-card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .current-hour-badge {
+            background: var(--cc-blue-bg);
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 800;
+            padding: 6px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 86, 224, 0.3);
+            direction: ltr;
+        }
+
+        .range-wrapper {
+            margin: 15px 0 10px 0;
+            direction: ltr;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 12px;
+            cursor: pointer;
+            background: #cbd5e1;
+            border-radius: 6px;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            height: 28px;
+            width: 28px;
+            border-radius: 50%;
+            background: var(--cc-blue-bg);
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -8px;
+            box-shadow: 0 0 12px rgba(0, 86, 224, 0.5), 0 0 0 4px white;
+            transition: transform 0.15s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .pills-row {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-top: 18px;
+            direction: ltr;
+        }
+
+        .time-pill {
+            background: #f1f5f9;
+            color: #334155;
+            padding: 9px 18px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            border: 1px solid #cbd5e1;
+            transition: all 0.2s;
+            white-space: nowrap;
+            direction: rtl;
+        }
+
+        .time-pill:hover, .time-pill.active {
+            background: var(--cc-blue-bg);
+            color: white;
+            border-color: var(--cc-blue-bg);
+            box-shadow: 0 4px 14px rgba(0, 86, 224, 0.35);
+        }
+
+        /* Main Seat Map Card */
+        .seat-map-card {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 35px 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+        }
+
+        .screen-arch {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto 40px auto;
+            text-align: center;
+        }
+
+        .arch-shape {
+            height: 48px;
+            background: linear-gradient(180deg, #1e3a8a 0%, #3b82f6 50%, #eff6ff 100%);
+            border-top-left-radius: 50% 100%;
+            border-top-right-radius: 50% 100%;
+            box-shadow: 0 -4px 18px rgba(59, 130, 246, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .screen-text {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .seat-map-wrapper {
+            overflow-x: auto;
+            padding: 10px 0;
+            display: flex;
+            justify-content: center;
+            direction: ltr; /* Seat 1 on Left side */
+        }
+
+        .rows-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .row-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            direction: ltr; /* Seat 1 on Left side */
+        }
+
+        .row-num {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #94a3b8;
+            width: 20px;
+            text-align: center;
+        }
+
+        .seats-in-row {
+            display: flex;
+            gap: 4px;
+            direction: ltr; /* Seat 1 on Left side */
+        }
+
+        .seat-btn {
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.15s;
+            border: none;
+        }
+
+        .seat-btn:hover {
+            transform: scale(1.35);
+            z-index: 20;
+        }
+
+        .seat-btn.free {
+            background: linear-gradient(180deg, #93c5fd 0%, #3b82f6 100%);
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+
+        .seat-btn.taken {
+            background: linear-gradient(180deg, #f87171 0%, #ef4444 100%);
+            color: white;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+        }
+
+        .seat-btn.taken::before {
+            content: '✖';
+            font-size: 0.72rem;
+            font-weight: 800;
+        }
+
+        .seat-btn.wheelchair {
+            background: #0284c7;
+            color: white;
+        }
+
+        .seat-btn.wheelchair::before {
+            content: '♿';
+            font-size: 0.75rem;
+        }
+
+        .legend-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #f1f5f9;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .legend-box {
+            width: 24px;
+            height: 24px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .legend-box.free { background: #3b82f6; }
+        .legend-box.taken { background: #ef4444; color: white; font-weight: 800; font-size: 0.75rem; }
+        .legend-box.wheelchair { background: #0284c7; }
+
+        .action-card {
+            max-width: 1100px;
+            margin: 25px auto 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .action-stats {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .btn-order-cc {
+            background: linear-gradient(135deg, #e50914 0%, #b20710 100%);
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 700;
+            padding: 12px 28px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(229, 9, 20, 0.4);
+            transition: transform 0.2s;
+        }
+
+        .btn-order-cc:hover {
+            transform: translateY(-2px);
+        }
+
+        /* ULTRA-CLEAN LUXURY OCCUPANCY CHART DASHBOARD (Zero Text Clutter) */
+        .chart-section-card {
+            max-width: 1100px;
+            margin: 35px auto 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px 25px 30px 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .chart-title-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .chart-title {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .occupancy-status-badge {
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            width: fit-content;
+        }
+
+        .occupancy-status-badge.quiet {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .occupancy-status-badge.medium {
+            background: #fef9c3;
+            color: #854d0e;
+            border: 1px solid #fef08a;
+        }
+
+        .occupancy-status-badge.busy {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        /* Top Right Color Legend Matching Mockup */
+        .chart-legend-top {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            direction: ltr;
+        }
+
+        .legend-pill-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #475569;
+        }
+
+        .legend-color-box {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+        }
+
+        .legend-color-box.low { background: #38bdf8; }
+        .legend-color-box.med { background: #f59e0b; }
+        .legend-color-box.high { background: #ef4444; }
+        .legend-color-box.very-high { background: #881337; }
+
+        /* Canvas Chart Box with Clean Padding */
+        .chart-canvas-wrapper {
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            padding: 45px 20px 35px 20px;
+            position: relative;
+            width: 100%;
+            direction: ltr;
+            overflow: visible;
+        }
+
+        /* Horizontal Gridlines */
+        .gridlines-bg {
+            position: absolute;
+            top: 45px;
+            left: 20px;
+            right: 20px;
+            height: 140px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .grid-line {
+            width: 100%;
+            height: 1px;
+            background: #cbd5e1;
+            opacity: 0.55;
+        }
+
+        .chart-grid-container {
+            display: grid;
+            gap: 4px;
+            align-items: flex-end;
+            height: 140px;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .chart-bar-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            justify-content: flex-end;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            width: 100%;
+        }
+
+        .chart-bar-column:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Hover Light Pinkish Highlight Column Background */
+        .chart-bar-column:hover::before {
+            content: '';
+            position: absolute;
+            top: -10px; bottom: -25px;
+            left: -2px; right: -2px;
+            background: rgba(254, 226, 226, 0.6);
+            border-radius: 6px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bar-track {
+            width: 100%;
+            max-width: 32px;
+            height: 140px;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            overflow: visible;
+        }
+
+        .bar-fill {
+            width: 100%;
+            border-radius: 5px 5px 0 0;
+            transition: height 0.4s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* 4 Threshold Color Fills Matching Mockup */
+        .bar-fill.low { background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%); }
+        .bar-fill.med { background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%); }
+        .bar-fill.high { background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%); }
+        .bar-fill.very-high { background: linear-gradient(180deg, #881337 0%, #710e2b 100%); }
+
+        /* Selected Active Blue Outline Frame + Top Percentage Badge */
+        .chart-bar-column.active .bar-track::after {
+            content: '';
+            position: absolute;
+            top: -18px; left: -4px; right: -4px; bottom: 0;
+            border: 2px solid #0056e0;
+            border-radius: 8px 8px 0 0;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .bar-top-active-badge {
+            position: absolute;
+            top: -36px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: #0f172a;
+            white-space: nowrap;
+            display: none;
+            z-index: 10;
+        }
+
+        .chart-bar-column.active .bar-top-active-badge {
+            display: block;
+        }
+
+        /* Ultra-Clean Bottom Showtime Hour Label (Single Horizontal Line) */
+        .bar-time-label {
+            margin-top: 12px;
+            font-size: 0.76rem;
+            font-weight: 800;
+            color: #0f172a;
+            direction: ltr;
+            white-space: nowrap;
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        /* Fully Visible Floating White Box Tooltip (Bounded position) */
+        .chart-tooltip-white {
+            position: absolute;
+            top: -42px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            color: #0f172a;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            white-space: nowrap;
+            display: none;
+            pointer-events: none;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.18), 0 0 0 1px #cbd5e1;
+            z-index: 150;
+            direction: rtl;
+        }
+
+        .chart-bar-column:hover .chart-tooltip-white {
+            display: block;
+        }
+
+        /* Edge-bound tooltip overrides to stay 100% inside card bounds */
+        .chart-bar-column:first-child .chart-tooltip-white,
+        .chart-bar-column:nth-child(2) .chart-tooltip-white {
+            left: 0;
+            transform: none;
+        }
+
+        .chart-bar-column:last-child .chart-tooltip-white,
+        .chart-bar-column:nth-last-child(2) .chart-tooltip-white,
+        .chart-bar-column:nth-last-child(3) .chart-tooltip-white {
+            left: auto;
+            right: 0;
+            transform: none;
+        }
+
+        .placeholder-box {
+            text-align: center;
+            padding: 50px 20px;
+            color: #64748b;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Control Bar -->
+    <div class="top-control-bar">
+        <div class="control-flex">
+            <div class="app-title">
+                🎬 <span>מערכת בדיקת מושבים - סינמה סיטי</span>
+            </div>
+
+            <div class="controls-group">
+                <div class="input-item">
+                    <label>מתחם קולנוע:</label>
+                    <select id="selectTheater" onchange="onTheaterChange()">
+                        <option value="">-- בחר מתחם קולנוע --</option>
+                    </select>
+                </div>
+
+                <div class="input-item">
+                    <label>סרט:</label>
+                    <select id="selectMovie" onchange="onMovieChange()">
+                        <option value="">-- בחר מתחם קודם --</option>
+                    </select>
+                </div>
+
+                <div class="input-item">
+                    <label>תאריך:</label>
+                    <select id="selectDate">
+                        <option value="">-- בחר סרט קודם --</option>
+                    </select>
+                </div>
+
+                <button class="btn-search" onclick="fetchAvailableSeats()">
+                    🔍 הצג מושבים פנויים
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welcome Card -->
+    <div class="welcome-card" id="welcomeCard">
+        <div class="welcome-icon">🎬🍿</div>
+        <div class="welcome-title">ברוכים הבאים למערכת בדיקת מושבים בזמן אמת</div>
+        <div class="welcome-text">
+            בחר מתחם קולנוע, סרט ותאריך בסרגל העליון ולחץ על <strong>"הצג מושבים פנויים"</strong>.<br>
+            המערכת תבצע סריקה בזמן אמת של כל ההקרנות ותציג לך את מפת המושבים המלאה וגרף עומסים בלחיצה אחת!
+        </div>
+    </div>
+
+    <!-- Sophisticated Progress Card -->
+    <div class="progress-card" id="progressCard">
+        <div class="progress-card-header">
+            <div class="progress-status-title" id="progressStatusText">
+                ⚡ <span>סורק מושבים והקרנות בזמן אמת...</span>
+            </div>
+            <div class="progress-percent-badge" id="progressPercentBadge">0%</div>
+        </div>
+
+        <div class="progress-track-bg">
+            <div class="progress-fill-bar" id="progressFillBar"></div>
+        </div>
+
+        <div class="progress-subtext" id="progressSubtext">
+            מתחבר לשרתי סינמה סיטי ושולף את מפת המושבים והעומס לכל ההקרנות...
+        </div>
+    </div>
+
+    <!-- Main Results Section (Hidden until Search finishes) -->
+    <div class="results-container" id="resultsContainer">
+
+        <!-- Official Cinema City Blue Header Banner -->
+        <div class="cc-header-bar">
+            <div class="header-content">
+                <div class="movie-info-text">
+                    <h1 id="hdrMovieName">--</h1>
+                    <div class="location-name" id="hdrLocationName">--</div>
+                    <div class="showtime-date" id="hdrShowtime">--</div>
+
+                    <div class="movie-tags">
+                        <span class="tag-pill">⏱️ 150 דקות</span>
+                        <span class="tag-pill">שפה: EN</span>
+                        <span class="tag-pill">כתוביות: HE</span>
+                    </div>
+                </div>
+
+                <!-- Dynamic Movie Poster Box -->
+                <div class="movie-poster-box" id="hdrPosterBox">
+                    <div class="poster-placeholder-icon">🎬</div>
+                    <div class="poster-placeholder-text" id="posterTitleText">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step Indicator Tabs -->
+        <div class="steps-container">
+            <div class="step-tab active">בחירת מושבים</div>
+            <div class="step-tab">בחירת סוג כרטיס</div>
+            <div class="step-tab">פרטים ותשלום</div>
+        </div>
+
+        <div class="sub-instruction">ניתן להזמין עד 10 מושבים.</div>
+
+        <!-- Time Slider Control Card -->
+        <div class="slider-control-card">
+            <div class="slider-card-header">
+                <div class="slider-card-title">שעת הקרנה נבחרת:</div>
+                <div class="current-hour-badge" id="badgeCurrentHour">--:--</div>
+            </div>
+
+            <div class="range-wrapper">
+                <input type="range" id="timeSlider" min="0" max="0" value="0" oninput="onSliderMove(this.value)" onchange="onSliderMove(this.value)">
+            </div>
+
+            <div class="pills-row" id="pillsContainer">
+                <!-- Time pills generated dynamically -->
+            </div>
+        </div>
+
+        <!-- Cinema Seat Plan Card -->
+        <div class="seat-map-card">
+            <div class="screen-arch">
+                <div class="arch-shape">
+                    <span class="screen-text" id="screenTitle">מסך</span>
+                </div>
+            </div>
+
+            <div id="seatMapContainer">
+                <!-- Seat plan grid rendered dynamically -->
+            </div>
+
+            <!-- Legend -->
+            <div class="legend-bar">
+                <div class="legend-item">
+                    <div class="legend-box free"></div>
+                    <span>מושב פנוי</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box taken">✖</div>
+                    <span>מושב תפוס</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box wheelchair">♿</div>
+                    <span>מקום לכיסא גלגלים</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-card">
+            <div class="action-stats" id="bottomStats">
+                מקומות פנויים: <strong>--</strong> / --
+            </div>
+
+            <a id="btnOrderCc" href="#" target="_blank" class="btn-order-cc">
+                🎟️ למעבר להזמנה באתר סינמה סיטי
+            </a>
+        </div>
+
+        <!-- Ultra-Clean Pixel-Perfect Occupancy Chart Dashboard Section -->
+        <div class="chart-section-card">
+            <div class="chart-header">
+                <div class="chart-title-box">
+                    <div class="chart-title">
+                        📊 <span>גרף תפוסה יומי לפי שעות הקרנה</span>
+                    </div>
+                    <div class="occupancy-status-badge quiet" id="dayStatusBadge">
+                        🟢 <span>יום רגוע ופנוי (תפוסה ממוצעת: 22%)</span>
+                    </div>
+                </div>
+
+                <!-- Top Right Threshold Legend Matching Mockup -->
+                <div class="chart-legend-top">
+                    <div class="legend-pill-item">
+                        <div class="legend-color-box low"></div>
+                        <span>Low (&lt;40%)</span>
+                    </div>
+                    <div class="legend-pill-item">
+                        <div class="legend-color-box med"></div>
+                        <span>Medium (40-70%)</span>
+                    </div>
+                    <div class="legend-pill-item">
+                        <div class="legend-color-box high"></div>
+                        <span>High (&gt;70%)</span>
+                    </div>
+                    <div class="legend-pill-item">
+                        <div class="legend-color-box very-high"></div>
+                        <span>Very High (&gt;90%)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-canvas-wrapper">
+                <!-- Background Horizontal Gridlines -->
+                <div class="gridlines-bg">
+                    <div class="grid-line"></div>
+                    <div class="grid-line"></div>
+                    <div class="grid-line"></div>
+                    <div class="grid-line"></div>
+                    <div class="grid-line"></div>
+                </div>
+
+                <div class="chart-grid-container" id="chartBarsContainer">
+                    <!-- Dynamic Bars Matching Mockup -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentShowtimes = [];
+        let activeIndex = 0;
+        let showtimeSeatsCache = {};
+        let progressInterval = null;
+
+        async function init() {
+            await loadTheaters();
+        }
+
+        // Bulletproof Hour Extraction
+        function extractHour(show) {
+            if (!show) return '';
+            const strToSearch = JSON.stringify(show);
+            const match = strToSearch.match(/\b([01]?\d|2[0-3]):[0-5]\d\b/);
+            if (match) return match[0];
+            return '';
+        }
+
+        function getSafeHour(show, index) {
+            let h = extractHour(show);
+            if (!h && currentShowtimes[index]) {
+                h = extractHour(currentShowtimes[index]);
+            }
+            if (!h && currentShowtimes[0]) {
+                h = extractHour(currentShowtimes[0]);
+            }
+            return h || '18:00';
+        }
+
+        function startProgressAnimation(movieName, theaterName) {
+            const card = document.getElementById('progressCard');
+            const fill = document.getElementById('progressFillBar');
+            const badge = document.getElementById('progressPercentBadge');
+            const title = document.getElementById('progressStatusText');
+            const subtext = document.getElementById('progressSubtext');
+
+            card.style.display = 'block';
+            fill.style.width = '5%';
+            badge.textContent = '5%';
+
+            let percent = 5;
+            if (progressInterval) clearInterval(progressInterval);
+
+            progressInterval = setInterval(() => {
+                if (percent < 92) {
+                    percent += Math.floor(Math.random() * 6) + 3;
+                    if (percent > 92) percent = 92;
+
+                    fill.style.width = percent + '%';
+                    badge.textContent = percent + '%';
+
+                    if (percent < 30) {
+                        title.innerHTML = '🔗 <span>מתחבר לשרתי סינמה סיטי...</span>';
+                        subtext.textContent = `יוצר תקשורת מוצפנת עבור "${movieName}" ב-${theaterName}`;
+                    } else if (percent < 60) {
+                        title.innerHTML = '🎟️ <span>שולף את לוח ההקרנות והאולמות...</span>';
+                        subtext.textContent = 'מאתר את כל שעות ההקרנה הזמינות להיום';
+                    } else if (percent < 92) {
+                        title.innerHTML = '🪑 <span>מטעין את כל מפות המושבים והתפוסה מראש...</span>';
+                        subtext.textContent = 'בודק מקומות פנויים, תפוסים ומקומות לכיסא גלגלים עבור כל שעה';
+                    }
+                }
+            }, 250);
+        }
+
+        function finishProgressAnimation(callback) {
+            if (progressInterval) clearInterval(progressInterval);
+
+            const fill = document.getElementById('progressFillBar');
+            const badge = document.getElementById('progressPercentBadge');
+            const title = document.getElementById('progressStatusText');
+
+            fill.style.width = '100%';
+            badge.textContent = '100%';
+            title.innerHTML = '✨ <span>כל השעות נטענו ב-100%! מציג תוצאות...</span>';
+
+            setTimeout(() => {
+                document.getElementById('progressCard').style.display = 'none';
+                if (callback) callback();
+            }, 300);
+        }
+
+        async function loadTheaters() {
+            try {
+                const res = await fetch('/api/theaters');
+                const theaters = await res.json();
+                const sel = document.getElementById('selectTheater');
+                sel.innerHTML = '<option value="">-- בחר מתחם קולנוע --</option>' +
+                    theaters.map(t => `<option value="${t.tixId}">${t.name}</option>`).join('');
+            } catch(e) { console.error(e); }
+        }
+
+        async function onTheaterChange() {
+            const theaterId = document.getElementById('selectTheater').value;
+            const movieSel = document.getElementById('selectMovie');
+            const dateSel = document.getElementById('selectDate');
+
+            if (!theaterId) {
+                movieSel.innerHTML = '<option value="">-- בחר מתחם קודם --</option>';
+                dateSel.innerHTML = '<option value="">-- בחר סרט קודם --</option>';
+                return;
+            }
+
+            movieSel.innerHTML = '<option value="">טוען סרטים...</option>';
+            dateSel.innerHTML = '<option value="">-- בחר סרט קודם --</option>';
+
+            try {
+                const res = await fetch('/api/movies?theaterId=' + theaterId);
+                const movies = await res.json();
+                
+                if (Array.isArray(movies) && movies.length > 0) {
+                    movieSel.innerHTML = '<option value="">-- בחר סרט --</option>' +
+                        movies.map(m => `<option value="${m.MovieId}">${m.Name}</option>`).join('');
+                } else {
+                    movieSel.innerHTML = '<option value="">אין סרטים זמינים</option>';
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function onMovieChange() {
+            const theaterId = document.getElementById('selectTheater').value;
+            const movieId = document.getElementById('selectMovie').value;
+            const dateSel = document.getElementById('selectDate');
+
+            if (!movieId) {
+                dateSel.innerHTML = '<option value="">-- בחר סרט קודם --</option>';
+                return;
+            }
+
+            dateSel.innerHTML = '<option value="">טוען תאריכים...</option>';
+
+            try {
+                const res = await fetch(`/api/dates?theaterId=${theaterId}&movieId=${movieId}`);
+                const dates = await res.json();
+
+                if (Array.isArray(dates) && dates.length > 0) {
+                    dateSel.innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
+                } else {
+                    const todayStr = new Date().toLocaleDateString('he-IL');
+                    dateSel.innerHTML = `<option value="${todayStr}">יום נוכחי ${todayStr}</option>`;
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function fetchAvailableSeats() {
+            const tixId = document.getElementById('selectTheater').value;
+            const movieId = document.getElementById('selectMovie').value;
+            const dateVal = document.getElementById('selectDate').value;
+
+            if (!tixId || !movieId) {
+                alert('אנא בחר מתחם קולנוע וסרט מתוך הרשימה.');
+                return;
+            }
+
+            const theaterName = document.getElementById('selectTheater').options[document.getElementById('selectTheater').selectedIndex].text;
+            const movieName = document.getElementById('selectMovie').options[document.getElementById('selectMovie').selectedIndex].text;
+
+            let dateClean = dateVal;
+            const dateMatch = dateVal.match(/\d{2}\/\d{2}\/\d{4}/);
+            if (dateMatch) dateClean = dateMatch[0];
+
+            document.getElementById('welcomeCard').style.display = 'none';
+            document.getElementById('resultsContainer').style.display = 'none';
+
+            startProgressAnimation(movieName, theaterName);
+
+            try {
+                const res = await fetch(`/api/batch_date_seats?theaterId=${tixId}&movieId=${movieId}&date=${encodeURIComponent(dateClean)}`);
+                const data = await res.json();
+
+                if (!data || !data.showtimes || data.showtimes.length === 0) {
+                    if (progressInterval) clearInterval(progressInterval);
+                    document.getElementById('progressCard').style.display = 'none';
+                    alert('לא נמצאו הקרנות לתאריך והסרט הנבחרים.');
+                    return;
+                }
+
+                currentShowtimes = data.showtimes;
+                showtimeSeatsCache = {};
+
+                currentShowtimes.forEach(s => {
+                    if (s.eventId && s.seatplan) {
+                        showtimeSeatsCache[s.eventId] = s;
+                    }
+                });
+
+                document.getElementById('hdrLocationName').textContent = theaterName;
+                document.getElementById('hdrMovieName').textContent = movieName;
+
+                const posterBox = document.getElementById('hdrPosterBox');
+                const livePosterUrl = currentShowtimes[0] && currentShowtimes[0].featureImageUrl;
+
+                if (livePosterUrl) {
+                    posterBox.innerHTML = `<img src="${livePosterUrl}" alt="${movieName}">`;
+                } else {
+                    posterBox.innerHTML = `
+                        <div class="poster-placeholder-icon">🎬</div>
+                        <div class="poster-placeholder-text">${movieName}</div>
+                    `;
+                }
+
+                const slider = document.getElementById('timeSlider');
+                slider.min = 0;
+                slider.max = currentShowtimes.length - 1;
+                slider.value = 0;
+
+                const pillsContainer = document.getElementById('pillsContainer');
+                pillsContainer.innerHTML = currentShowtimes.map((s, idx) => {
+                    const h = getSafeHour(s, idx);
+                    return `
+                        <button class="time-pill ${idx === 0 ? 'active' : ''}" onclick="selectShowtime(${idx})">
+                            ${h} (${s.venueName || 'אולם'})
+                        </button>
+                    `;
+                }).join('');
+
+                renderOccupancyChart();
+
+                // ENSURE SHOWTIME 0 SEATPLAN IS ALWAYS FETCHED IMMEDIATELY BEFORE DISPLAY!
+                const firstShow = currentShowtimes[0];
+                if (firstShow && (!firstShow.seatplan || Object.keys(firstShow.seatplan).length === 0)) {
+                    try {
+                        const r = await fetch(`/api/show_seats?eventId=${firstShow.eventId}`);
+                        const d = await r.json();
+                        if (d && d.seatplan) {
+                            showtimeSeatsCache[firstShow.eventId] = d;
+                        }
+                    } catch(e) {}
+                }
+
+                selectShowtime(0);
+
+                // FAST PRE-FETCH ALL REMAINING SHOWTIMES IN PARALLEL SO ALL BARS & HOURS ARE 100% PRE-LOADED!
+                const fetchPromises = currentShowtimes.map(async (show, idx) => {
+                    if (!showtimeSeatsCache[show.eventId]) {
+                        try {
+                            const r = await fetch(`/api/show_seats?eventId=${show.eventId}`);
+                            const d = await r.json();
+                            if (d && d.seatplan) {
+                                showtimeSeatsCache[show.eventId] = d;
+                                updateChartColumnFromData(idx, d);
+                                if (idx === activeIndex) {
+                                    displaySeatmapData(d);
+                                }
+                            }
+                        } catch(e) {}
+                    }
+                });
+
+                await Promise.all(fetchPromises);
+
+                finishProgressAnimation(() => {
+                    document.getElementById('resultsContainer').style.display = 'block';
+                });
+
+            } catch(e) {
+                console.error(e);
+                if (progressInterval) clearInterval(progressInterval);
+                document.getElementById('progressCard').style.display = 'none';
+                alert('שגיאה בטעינת הנתונים: ' + e.message);
+            }
+        }
+
+        function onSliderMove(val) {
+            const idx = parseInt(val);
+            if (!isNaN(idx) && idx >= 0 && idx < currentShowtimes.length) {
+                selectShowtime(idx);
+            }
+        }
+
+        async function selectShowtime(index) {
+            activeIndex = index;
+            const show = currentShowtimes[index];
+            if (!show) return;
+
+            const hour = getSafeHour(show, index);
+            const dayStr = document.getElementById('selectDate').value;
+
+            const slider = document.getElementById('timeSlider');
+            slider.value = index;
+            document.getElementById('badgeCurrentHour').textContent = hour;
+            document.getElementById('hdrShowtime').textContent = `${dayStr} ${hour}`;
+
+            const pills = document.querySelectorAll('.time-pill');
+            pills.forEach((p, idx) => {
+                if (idx === index) {
+                    p.classList.add('active');
+                } else {
+                    p.classList.remove('active');
+                }
+            });
+
+            const chartBars = document.querySelectorAll('.chart-bar-column');
+            chartBars.forEach((b, idx) => {
+                if (idx === index) {
+                    b.classList.add('active');
+                } else {
+                    b.classList.remove('active');
+                }
+            });
+
+            document.getElementById('btnOrderCc').href = `https://tickets.cinema-city.co.il/order/${show.eventId}`;
+
+            if (showtimeSeatsCache[show.eventId] && showtimeSeatsCache[show.eventId].seatplan) {
+                displaySeatmapData(showtimeSeatsCache[show.eventId]);
+            } else {
+                displaySeatmapData(show);
+
+                try {
+                    const r = await fetch(`/api/show_seats?eventId=${show.eventId}`);
+                    const d = await r.json();
+                    if (d && d.seatplan) {
+                        showtimeSeatsCache[show.eventId] = d;
+                        if (index === activeIndex) {
+                            displaySeatmapData(d);
+                        }
+                    }
+                } catch(e) {}
+            }
+        }
+
+        function displaySeatmapData(data) {
+            const venueName = data.venueName || (currentShowtimes[activeIndex] ? currentShowtimes[activeIndex].venueName : 'אולם');
+            document.getElementById('screenTitle').textContent = `מסך - ${venueName}`;
+
+            const movieName = document.getElementById('hdrMovieName').textContent;
+            const posterBox = document.getElementById('hdrPosterBox');
+            const posterUrl = data.featureImageUrl || (currentShowtimes[0] && currentShowtimes[0].featureImageUrl);
+
+            if (posterUrl) {
+                posterBox.innerHTML = `<img src="${posterUrl}" alt="${movieName}">`;
+            } else {
+                posterBox.innerHTML = `
+                    <div class="poster-placeholder-icon">🎬</div>
+                    <div class="poster-placeholder-text">${movieName}</div>
+                `;
+            }
+
+            const hr = getSafeHour(data, activeIndex);
+            const dayStr = document.getElementById('selectDate').value;
+            document.getElementById('badgeCurrentHour').textContent = hr;
+            document.getElementById('hdrShowtime').textContent = `${dayStr} ${hr}`;
+
+            let freeCount = 0;
+            let occupiedCount = 0;
+            let totalCount = 0;
+
+            const seatplan = data.seatplan;
+            const seatsStatus = data.seatsStatus;
+
+            if (seatplan && seatplan['1'] && seatplan['1'].G && seatplan['1'].G['0'] && seatplan['1'].G['0'].R) {
+                const rowsObj = seatplan['1'].G['0'].R;
+                for (const rKey in rowsObj) {
+                    const seatsObj = rowsObj[rKey].S || {};
+                    for (const sKey in seatsObj) {
+                        const seatData = seatsObj[sKey];
+                        const isWheelchair = seatData.hc === 1;
+
+                        const statusKey = `1_${sKey}_${rKey}`;
+                        const statusVal = seatsStatus ? seatsStatus[statusKey] : 0;
+                        const isTakenByStatus = statusVal !== 0;
+
+                        totalCount++;
+
+                        if (isTakenByStatus || isWheelchair) {
+                            occupiedCount++;
+                        } else {
+                            freeCount++;
+                        }
+                    }
+                }
+            } else if (seatsStatus && Object.keys(seatsStatus).length > 0) {
+                for (const k in seatsStatus) {
+                    totalCount++;
+                    if (seatsStatus[k] === 0) freeCount++;
+                    else occupiedCount++;
+                }
+            }
+
+            data.totalSeats = totalCount;
+            data.freeSeats = freeCount;
+            data.occupiedSeats = occupiedCount;
+
+            document.getElementById('bottomStats').innerHTML = `
+                מקומות פנויים בשעה ${hr}: <strong style="color:#0056e0;">${freeCount}</strong> מתוך ${totalCount} (תפוסים: ${occupiedCount})
+            `;
+
+            updateChartColumn(activeIndex, freeCount, occupiedCount, totalCount);
+            renderSeatMapGrid(seatplan, seatsStatus);
+        }
+
+        function renderSeatMapGrid(seatplan, seatsStatus) {
+            const container = document.getElementById('seatMapContainer');
+            container.innerHTML = '';
+
+            if (!seatplan) {
+                container.innerHTML = '<div class="placeholder-box">מפת מושבים לא זמינה להקרנה זו</div>';
+                return;
+            }
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'seat-map-wrapper';
+
+            const rowsList = document.createElement('div');
+            rowsList.className = 'rows-list';
+
+            const section = seatplan['1'];
+            if (!section || !section.G || !section.G['0'] || !section.G['0'].R) {
+                container.innerHTML = '<div class="placeholder-box">פורמט מושבים לא זמין</div>';
+                return;
+            }
+
+            const rowsObj = section.G['0'].R;
+            const rowKeys = Object.keys(rowsObj);
+
+            rowKeys.forEach(rKey => {
+                const rowData = rowsObj[rKey];
+                const rowNum = rowData.n || rKey;
+                const seatsObj = rowData.S || {};
+
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'row-item';
+
+                const leftNum = document.createElement('div');
+                leftNum.className = 'row-num';
+                leftNum.textContent = rowNum;
+                rowDiv.appendChild(leftNum);
+
+                const seatsDiv = document.createElement('div');
+                seatsDiv.className = 'seats-in-row';
+
+                const seatKeys = Object.keys(seatsObj);
+                seatKeys.forEach(sKey => {
+                    const seatData = seatsObj[sKey];
+                    const seatNum = seatData.n || sKey;
+                    const isWheelchair = seatData.hc === 1;
+
+                    const statusKey = `1_${sKey}_${rKey}`;
+                    const statusVal = seatsStatus ? seatsStatus[statusKey] : 0;
+                    const isTaken = statusVal !== 0;
+
+                    const seatBtn = document.createElement('div');
+                    let seatClass = 'seat-btn ';
+                    if (isWheelchair) seatClass += 'wheelchair';
+                    else if (isTaken) seatClass += 'taken';
+                    else seatClass += 'free';
+
+                    seatBtn.className = seatClass;
+
+                    const statusText = isTaken ? 'תפוס' : isWheelchair ? 'מקום לכיסא גלגלים' : 'פנוי';
+                    seatBtn.title = `שורה ${rowNum}, מושב ${seatNum} (${statusText})`;
+
+                    seatsDiv.appendChild(seatBtn);
+                });
+
+                rowDiv.appendChild(seatsDiv);
+
+                const rightNum = document.createElement('div');
+                rightNum.className = 'row-num';
+                rightNum.textContent = rowNum;
+                rowDiv.appendChild(rightNum);
+
+                rowsList.appendChild(rowDiv);
+            });
+
+            wrapper.appendChild(rowsList);
+            container.appendChild(wrapper);
+        }
+
+        function renderOccupancyChart() {
+            const chartContainer = document.getElementById('chartBarsContainer');
+            chartContainer.innerHTML = '';
+
+            const N = currentShowtimes.length;
+            chartContainer.style.gridTemplateColumns = `repeat(${N}, 1fr)`;
+
+            currentShowtimes.forEach((show, idx) => {
+                const hour = getSafeHour(show, idx);
+                const rawHall = show.venueName || 'אולם';
+
+                let free = show.freeSeats || 0;
+                let occ = show.occupiedSeats || 0;
+                let total = show.totalSeats || 0;
+
+                const occPercent = total > 0 ? Math.round((occ / total) * 100) : 0;
+
+                let fillClass = 'bar-fill low';
+                let occTag = 'Low';
+                if (occPercent > 90) { fillClass = 'bar-fill very-high'; occTag = 'Very High'; }
+                else if (occPercent > 70) { fillClass = 'bar-fill high'; occTag = 'High'; }
+                else if (occPercent >= 40) { fillClass = 'bar-fill med'; occTag = 'Medium'; }
+
+                const col = document.createElement('div');
+                col.className = `chart-bar-column ${idx === 0 ? 'active' : ''}`;
+                col.id = `chartCol_${idx}`;
+                col.onclick = () => selectShowtime(idx);
+
+                col.innerHTML = `
+                    <div class="bar-top-active-badge" id="barPercent_${idx}">${occPercent}%</div>
+                    <div class="chart-tooltip-white">${rawHall} | שעה ${hour} | תפוסה: ${occPercent}% (${occTag})</div>
+                    <div class="bar-track">
+                        <div class="${fillClass}" id="barFill_${idx}" style="height: ${Math.max(occPercent, 6)}%;"></div>
+                    </div>
+                    <div class="bar-time-label">${hour}</div>
+                `;
+                chartContainer.appendChild(col);
+            });
+
+            updateOverallDayStatus();
+        }
+
+        function updateChartColumnFromData(index, data) {
+            let free = 0;
+            let occ = 0;
+            let total = 0;
+
+            const seatplan = data.seatplan;
+            const seatsStatus = data.seatsStatus;
+
+            if (seatplan && seatplan['1'] && seatplan['1'].G && seatplan['1'].G['0'] && seatplan['1'].G['0'].R) {
+                const rowsObj = seatplan['1'].G['0'].R;
+                for (const rKey in rowsObj) {
+                    const seatsObj = rowsObj[rKey].S || {};
+                    for (const sKey in seatsObj) {
+                        const seatData = seatsObj[sKey];
+                        const isWheelchair = seatData.hc === 1;
+
+                        const statusKey = `1_${sKey}_${rKey}`;
+                        const statusVal = seatsStatus ? seatsStatus[statusKey] : 0;
+                        const isTakenByStatus = statusVal !== 0;
+
+                        total++;
+
+                        if (isTakenByStatus || isWheelchair) {
+                            occ++;
+                        } else {
+                            free++;
+                        }
+                    }
+                }
+            }
+
+            if (currentShowtimes[index]) {
+                currentShowtimes[index].freeSeats = free;
+                currentShowtimes[index].occupiedSeats = occ;
+                currentShowtimes[index].totalSeats = total;
+            }
+
+            updateChartColumn(index, free, occ, total);
+        }
+
+        function updateChartColumn(index, free, occupied, total) {
+            if (!total || total <= 0) return;
+            const occPercent = Math.round((occupied / total) * 100);
+
+            const percentLabel = document.getElementById(`barPercent_${index}`);
+            const fillBar = document.getElementById(`barFill_${index}`);
+            const col = document.getElementById(`chartCol_${index}`);
+
+            if (percentLabel) percentLabel.textContent = `${occPercent}%`;
+
+            if (fillBar) {
+                fillBar.style.height = `${Math.max(occPercent, 6)}%`;
+                
+                let fillClass = 'bar-fill low';
+                let occTag = 'Low';
+                if (occPercent > 90) { fillClass = 'bar-fill very-high'; occTag = 'Very High'; }
+                else if (occPercent > 70) { fillClass = 'bar-fill high'; occTag = 'High'; }
+                else if (occPercent >= 40) { fillClass = 'bar-fill med'; occTag = 'Medium'; }
+                
+                fillBar.className = fillClass;
+
+                if (col && currentShowtimes[index]) {
+                    const hour = getSafeHour(currentShowtimes[index], index);
+                    const rawHall = currentShowtimes[index].venueName || 'אולם';
+                    const tt = col.querySelector('.chart-tooltip-white');
+                    if (tt) tt.textContent = `${rawHall} | שעה ${hour} | תפוסה: ${occPercent}% (${occTag})`;
+                }
+            }
+
+            updateOverallDayStatus();
+        }
+
+        function updateOverallDayStatus() {
+            let totalOcc = 0;
+            let totalSeatsSum = 0;
+
+            currentShowtimes.forEach(s => {
+                totalOcc += s.occupiedSeats || 0;
+                totalSeatsSum += s.totalSeats || 0;
+            });
+
+            const badge = document.getElementById('dayStatusBadge');
+
+            if (totalSeatsSum === 0) {
+                badge.className = 'occupancy-status-badge quiet';
+                badge.innerHTML = '🟢 <span>יום רגוע ופנוי (תפוסה ממוצעת: 0%)</span>';
+                return;
+            }
+
+            const dayAvgOcc = Math.round((totalOcc / totalSeatsSum) * 100);
+
+            if (dayAvgOcc > 50) {
+                badge.className = 'occupancy-status-badge busy';
+                badge.innerHTML = `🔴 <span>יום עמוס (תפוסה ממוצעת: ${dayAvgOcc}%)</span>`;
+            } else if (dayAvgOcc > 25) {
+                badge.className = 'occupancy-status-badge medium';
+                badge.innerHTML = `🟡 <span>עומס בינוני (תפוסה ממוצעת: ${dayAvgOcc}%)</span>`;
+            } else {
+                badge.className = 'occupancy-status-badge quiet';
+                badge.innerHTML = `🟢 <span>יום רגוע ופנוי (תפוסה ממוצעת: ${dayAvgOcc}%)</span>`;
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
